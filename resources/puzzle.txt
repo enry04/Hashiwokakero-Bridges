@@ -1,0 +1,6 @@
+#dimensione griglia
+8 4
+#Coordinate isole + grado
+1 1 3
+3 3 2
+7 2 1
