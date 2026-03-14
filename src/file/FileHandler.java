@@ -7,9 +7,10 @@ import java.io.InputStreamReader;
 
 public class FileHandler {
 
-    public static int[][] getPuzzleConfig() {
+    private String[] textLines;
+
+    public void readFile() {
         InputStream inputStream = FileHandler.class.getResourceAsStream("/puzzle.txt");
-        int[][] puzzleConfig;
 
         if (inputStream == null) {
             System.err.println("Error loading puzzle.txt file");
@@ -18,30 +19,23 @@ public class FileHandler {
 
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-            String text = reader.readAllAsString();
-            puzzleConfig = parseText(text);
+            textLines = reader.readAllAsString().split("\n");
+
 
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
-        return puzzleConfig;
     }
 
-    private int[][] parseText(String text) {
-        boolean isGridDimensionsAlreadyReaded = false;
-        int[][] puzzleConfig;
-        String[] lines = text.split("\n");
-        for (String line : lines) {
-            if (line.startsWith("#")) continue;
-            String[] words = line.split("\\s+");
-            if (!isGridDimensionsAlreadyReaded) {
-                puzzleConfig = new int[Integer.parseInt(words[0])][Integer.parseInt(words[1])];
-                isGridDimensionsAlreadyReaded = true;
-            }
+    private int[] getGridDimensions() {
+        int[] gridDimensions = new int[2];
+        String[] words = textLines[1].split("\\s+");
+        gridDimensions[0] = Integer.parseInt(words[0]);
+        gridDimensions[1] = Integer.parseInt(words[1]);
 
-
-        }
-        return puzzleConfig;
+        return gridDimensions;
     }
+
+
+
 }
