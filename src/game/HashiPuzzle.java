@@ -1,5 +1,6 @@
 package game;
 
+import javax.swing.text.html.HTMLDocument;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,52 +12,39 @@ public class HashiPuzzle {
 
     public HashiPuzzle(String[] input) {
         bridges = new ArrayList<>();
-        parseInput(input);
-        //validateInput();
+        initIslands(input);
+        checkNeighbors();
+
     }
 
-    private void parseInput(String[] input) {
-        boolean isDimensionsAlreadyReaded = false;
+    private void initIslands(String[] input) {
         for (String line : input) {
             if (line.isEmpty() || line.startsWith("#")) continue;
             String[] cells = line.split("\\s+");
-            if (!isDimensionsAlreadyReaded) {
+            if (islands == null) {
                 rows = Integer.parseInt(cells[0]);
                 cols = Integer.parseInt(cells[1]);
                 islands = new Island[rows][cols];
-                isDimensionsAlreadyReaded = true;
-            } else {
-                int currentX = Integer.parseInt(cells[0]);
-                int currentY = Integer.parseInt(cells[1]);
-                int currentDegree = Integer.parseInt(cells[2]);
-
-                if (isIslandCorrect(currentX, currentY, currentDegree)) {
-                    islands[Integer.parseInt(cells[0])][Integer.parseInt(cells[1])] = new Island(Integer.parseInt(cells[2]));
-                }
-
+                continue;
+            }
+            int currentX = Integer.parseInt(cells[0]);
+            int currentY = Integer.parseInt(cells[1]);
+            int currentDegree = Integer.parseInt(cells[2]);
+            islands[currentX][currentY] = new Island(currentDegree, currentX, currentY);
+            if (isIslandCorrect(islands[currentX][currentY])) {
+                throw new IllegalArgumentException("Invalid island at (" + currentX + "," + currentY + ") with degree " + currentDegree);
             }
         }
     }
 
-    private boolean isIslandCorrect(int currentX, int currentY, int currentDegree) {
-
-
-        if (currentX <= 0 || currentY <= 0 || currentX >= rows || currentY >= cols) {
-            System.err.println("Error: Island coordinates out of bounds!");
-            System.exit(1);
-        }
-
-        if (currentDegree <= 0 || currentDegree > 8) {
-            System.err.println("Error: degrees out of range.");
-            System.exit(1);
-        }
-
-        if (islands[currentX][currentY] != null) {
-            System.err.println("Error: two islands with the same coordinates!");
-            System.exit(1);
-        }
-        return false;
+    private boolean isIslandCorrect(Island island) {
+        if (island.getX() < 0 || island.getY() < 0 || island.getX() >= rows || island.getY() >= cols || island.getDegree() <= 0 || island.getDegree() > 8)
+            return false;
+        return islands[island.getX()][island.getY()] == null;
     }
 
+    private void checkNeighbors() {
+
+    }
 
 }

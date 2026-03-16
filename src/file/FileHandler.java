@@ -20,7 +20,6 @@ public class FileHandler {
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
             textLines = reader.readAllAsString().split("\n");
 
-
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
