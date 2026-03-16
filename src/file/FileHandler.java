@@ -7,9 +7,8 @@ import java.io.InputStreamReader;
 
 public class FileHandler {
 
-    private String[] textLines;
-
-    public void readFile() {
+    public static String[] readFile() {
+        String[] textLines;
         InputStream inputStream = FileHandler.class.getResourceAsStream("/puzzle.txt");
 
         if (inputStream == null) {
@@ -25,17 +24,6 @@ public class FileHandler {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        return textLines;
     }
-
-    private int[] getGridDimensions() {
-        int[] gridDimensions = new int[2];
-        String[] words = textLines[1].split("\\s+");
-        gridDimensions[0] = Integer.parseInt(words[0]);
-        gridDimensions[1] = Integer.parseInt(words[1]);
-
-        return gridDimensions;
-    }
-
-
-
 }
