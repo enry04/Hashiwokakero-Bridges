@@ -9,19 +9,22 @@ public class HashiPuzzle {
     private List<Island> islands;
     private int rows, cols;
     private List<Bridge> bridges;
+    private HashiSolver hashiSolver;
 
     public HashiPuzzle(String[] input) {
         bridges = new ArrayList<>();
         islands = new ArrayList<>();
+        hashiSolver = new HashiSolver();
         initIslands(input);
         validateDegrees();
         addBridges();
-
+        solve();
     }
 
     private void initIslands(String[] input) {
+        int counter = 0;
         for (String line : input) {
-            if (line.isEmpty() || line.startsWith("#")) continue;
+            if (line.isEmpty() || line.startsWith("#") || line.startsWith("\r")) continue;
             String[] cells = line.split("\\s+");
             if (grid == null) {
                 rows = Integer.parseInt(cells[0]);
@@ -35,8 +38,9 @@ public class HashiPuzzle {
             if (!isIslandCorrect(currentX, currentY, currentDegree)) {
                 throw new IllegalArgumentException("Invalid island at (" + currentX + "," + currentY + ") with degree " + currentDegree);
             }
-            grid[currentX][currentY] = new Island(currentDegree, currentX, currentY);
+            grid[currentX][currentY] = new Island(currentDegree, currentX, currentY, counter);
             islands.add(grid[currentX][currentY]);
+            counter++;
         }
     }
 
@@ -103,4 +107,55 @@ public class HashiPuzzle {
             }
         }
     }
+
+    private void solve() {
+        initVariables();
+        hashiSolver.addBridgesConstraint();
+        addDegreeConstraint();
+        addCrossConstraint();
+        hashiSolver.printConstraints();
+    }
+
+    private void initVariables() {
+        for (Bridge bridge : bridges) {
+            hashiSolver.addVariable("bridge_" + bridge.getIslandA().getId() + "_" + bridge.getIslandB().getId());
+        }
+    }
+
+    private void addDegreeConstraint() {
+        for (Island island : islands) {
+            hashiSolver.addDegreeConstraint(island.getId(), island.getDegree());
+        }
+    }
+
+    private void addCrossConstraint() {
+        for (int i = 0; i < bridges.size(); i++) {
+            for (int j = i + 1; j < bridges.size(); j++) {
+                if (isCrossing(bridges.get(i), bridges.get(j))) {
+                    hashiSolver.addCrossConstraint("bridge_" + bridges.get(i).getIslandA().getId() + "_" + bridges.get(i).getIslandB().getId(), "bridge_" + bridges.get(j).getIslandA().getId() + "_" + bridges.get(j).getIslandB().getId());
+                }
+            }
+        }
+    }
+
+    private boolean isCrossing(Bridge bridgeA, Bridge bridgeB) {
+
+        if (bridgeA.isHorizontal() == bridgeB.isHorizontal()) return false;
+
+        Bridge horizontal = bridgeA.isHorizontal() ? bridgeA : bridgeB;
+        Bridge vertical = bridgeA.isHorizontal() ? bridgeB : bridgeA;
+
+        int intersectionX = horizontal.getIslandA().getX();
+        int intersectionY = vertical.getIslandA().getY();
+
+        boolean cond1 = isBetween(intersectionX, vertical.getIslandA().getX(), vertical.getIslandB().getX());
+        boolean cond2 = isBetween(intersectionY, horizontal.getIslandA().getY(), horizontal.getIslandB().getY());
+
+        return cond1 && cond2;
+    }
+
+    private boolean isBetween(int val, int a, int b) {
+        return val > Math.min(a, b) && val < Math.max(a, b);
+    }
+
 }

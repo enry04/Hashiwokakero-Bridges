@@ -1,6 +1,5 @@
 package main;
 
-
 import file.FileHandler;
 import game.HashiPuzzle;
 
