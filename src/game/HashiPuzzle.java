@@ -10,11 +10,13 @@ public class HashiPuzzle {
     private int rows, cols;
     private List<Bridge> bridges;
     private HashiSolver hashiSolver;
+    private HashiGraph hashiGraph;
 
     public HashiPuzzle(String[] input) {
         bridges = new ArrayList<>();
         islands = new ArrayList<>();
         hashiSolver = new HashiSolver();
+        hashiGraph = new HashiGraph();
         initIslands(input);
         validateDegrees();
         addBridges();
@@ -42,6 +44,7 @@ public class HashiPuzzle {
             islands.add(grid[currentX][currentY]);
             counter++;
         }
+        hashiGraph.initGraph(islands);
     }
 
     private boolean isIslandCorrect(int x, int y, int degree) {
@@ -112,7 +115,11 @@ public class HashiPuzzle {
         addDegreeConstraint();
         addCrossConstraint();
         hashiSolver.printConstraints();
-        hashiSolver.solvePuzzle();
+        if (hashiSolver.hasSolution()) {
+            hashiGraph.buildGraph(hashiSolver.getBridgeValues());
+        }
+
+
     }
 
     private void initVariables() {

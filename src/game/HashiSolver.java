@@ -3,7 +3,9 @@ package game;
 import com.microsoft.z3.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class HashiSolver {
 
@@ -12,6 +14,7 @@ public class HashiSolver {
     private List<IntExpr> variables;
     private List<BoolExpr> costraints;
     private List<BoolExpr> assumptions;
+    private Map<String, Integer> bridgeValues;
 
     public HashiSolver() {
         context = new Context();
@@ -19,6 +22,7 @@ public class HashiSolver {
         variables = new ArrayList<>();
         costraints = new ArrayList<>();
         assumptions = new ArrayList<>();
+        bridgeValues = new HashMap<>();
     }
 
     public void addVariable(String varName) {
@@ -69,16 +73,25 @@ public class HashiSolver {
         solver.add(context.mkImplies(label, constraint));
     }
 
-    public void solvePuzzle() {
+    public boolean hasSolution() {
 
         Status status = solver.check(assumptions.toArray(new BoolExpr[0]));
 
         if (status == Status.SATISFIABLE) {
+            createSolutionMap();
             printSolution();
-        } else if (status == Status.UNSATISFIABLE) {
-            printConstraintsInConflict();
+            return true;
         } else {
-            System.out.println("Solver does not know how to solve...");
+            printConstraintsInConflict();
+            return false;
+        }
+    }
+
+    private void createSolutionMap() {
+        Model model = solver.getModel();
+        for (IntExpr variable : variables) {
+            int val = Integer.parseInt(model.evaluate(variable, false).toString());
+            bridgeValues.put(variable.toString(), val);
         }
     }
 
@@ -109,5 +122,9 @@ public class HashiSolver {
         for (int i = 0; i < costraints.size(); i++) {
             System.out.println(i + 1 + ") " + costraints.get(i) + "\n");
         }
+    }
+
+    public Map<String, Integer> getBridgeValues() {
+        return bridgeValues;
     }
 }
