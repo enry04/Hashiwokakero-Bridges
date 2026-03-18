@@ -54,10 +54,8 @@ public class HashiPuzzle {
     private void validateDegrees() {
         for (Island island : islands) {
             island.setNeighbors(addNeighbors(island));
-            int maxBridges = island.getNeighbors().size() * 2;
-            if (island.getDegree() > maxBridges) {
-                throw new RuntimeException("Invalid degrees, impossible to solve");
-            }
+            if (island.getNeighbors().isEmpty())
+                throw new RuntimeException("Island " + island.getId() + " has no neighbors, impossible to solve");
         }
     }
 
@@ -114,6 +112,7 @@ public class HashiPuzzle {
         addDegreeConstraint();
         addCrossConstraint();
         hashiSolver.printConstraints();
+        hashiSolver.solvePuzzle();
     }
 
     private void initVariables() {
