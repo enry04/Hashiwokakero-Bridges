@@ -1,22 +1,27 @@
 package game;
 
+import gui.HashiPuzzleGUI;
+import javafx.application.Application;
+import main.Logger;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class HashiPuzzle {
 
     private Island[][] grid;
-    private List<Island> islands;
+    private final List<Island> islands;
     private int rows, cols;
-    private List<Bridge> bridges;
-    private HashiSolver hashiSolver;
+    private final List<Bridge> bridges;
+    private final HashiSolver hashiSolver;
     private HashiGraph hashiGraph;
+    private HashiPuzzleGUI hashiPuzzleGUI;
 
     public HashiPuzzle(String[] input) {
         bridges = new ArrayList<>();
         islands = new ArrayList<>();
         hashiSolver = new HashiSolver();
-        hashiGraph = new HashiGraph();
+        hashiPuzzleGUI = new HashiPuzzleGUI();
         initIslands(input);
         validateDegrees();
         addBridges();
@@ -38,13 +43,13 @@ public class HashiPuzzle {
             int currentY = Integer.parseInt(cells[1]);
             int currentDegree = Integer.parseInt(cells[2]);
             if (!isIslandCorrect(currentX, currentY, currentDegree)) {
-                throw new IllegalArgumentException("Invalid island at (" + currentX + "," + currentY + ") with degree " + currentDegree);
+                Logger.logError("Invalid island at (" + currentX + "," + currentY + ") with degree " + currentDegree);
             }
             grid[currentX][currentY] = new Island(currentDegree, currentX, currentY, counter);
             islands.add(grid[currentX][currentY]);
             counter++;
         }
-        hashiGraph.initGraph(islands);
+        hashiGraph = new HashiGraph(islands);
     }
 
     private boolean isIslandCorrect(int x, int y, int degree) {
@@ -53,12 +58,11 @@ public class HashiPuzzle {
         return grid[x][y] == null;
     }
 
-
     private void validateDegrees() {
         for (Island island : islands) {
             island.setNeighbors(addNeighbors(island));
             if (island.getNeighbors().isEmpty())
-                throw new RuntimeException("Island " + island.getId() + " has no neighbors, impossible to solve");
+                Logger.logError("Island " + island.getId() + " has no neighbors, impossible to solve");
         }
     }
 
@@ -110,16 +114,24 @@ public class HashiPuzzle {
     }
 
     private void solve() {
+        hashiSolver.setTimeout();
         initVariables();
         hashiSolver.addBridgesConstraint();
         addDegreeConstraint();
         addCrossConstraint();
         hashiSolver.printConstraints();
-        if (hashiSolver.hasSolution()) {
+
+        while (hashiSolver.hasSolution()) {
             hashiGraph.buildGraph(hashiSolver.getBridgeValues());
+            hashiSolver.printSolution();
+
+            if (!hashiGraph.isGraphConnected()) {
+                Logger.logWarning("Graph not connected, searching another solution with connectivity constraint...");
+                hashiSolver.generateAnotherSolution(hashiGraph.getComponents());
+            } else {
+                return;
+            }
         }
-
-
     }
 
     private void initVariables() {
@@ -164,4 +176,11 @@ public class HashiPuzzle {
         return val > Math.min(a, b) && val < Math.max(a, b);
     }
 
+    public int getCols() {
+        return cols;
+    }
+
+    public int getRows() {
+        return rows;
+    }
 }

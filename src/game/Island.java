@@ -7,7 +7,7 @@ public class Island {
     private final int degree;
     private final int x, y;
     private List<Island> neighbors;
-    private int id;
+    private final int id;
 
     public Island(int degree, int x, int y, int id) {
         this.degree = degree;

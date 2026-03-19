@@ -1,6 +1,7 @@
 package game;
 
 import com.microsoft.z3.*;
+import main.Logger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,10 +12,10 @@ public class HashiSolver {
 
     private final Solver solver;
     private final Context context;
-    private List<IntExpr> variables;
-    private List<BoolExpr> costraints;
-    private List<BoolExpr> assumptions;
-    private Map<String, Integer> bridgeValues;
+    private final List<IntExpr> variables;
+    private final List<BoolExpr> costraints;
+    private final List<BoolExpr> assumptions;
+    private final Map<String, Integer> bridgeValues;
 
     public HashiSolver() {
         context = new Context();
@@ -23,6 +24,12 @@ public class HashiSolver {
         costraints = new ArrayList<>();
         assumptions = new ArrayList<>();
         bridgeValues = new HashMap<>();
+    }
+
+    public void setTimeout() {
+        Params params = context.mkParams();
+        params.add("timeout", 5000);
+        solver.setParameters(params);
     }
 
     public void addVariable(String varName) {
@@ -79,12 +86,14 @@ public class HashiSolver {
 
         if (status == Status.SATISFIABLE) {
             createSolutionMap();
-            printSolution();
             return true;
-        } else {
+        } else if (status == Status.UNSATISFIABLE) {
             printConstraintsInConflict();
-            return false;
+        } else {
+            Logger.logInfo("Unknown solution, timeout reached...");
         }
+
+        return false;
     }
 
     private void createSolutionMap() {
@@ -95,32 +104,61 @@ public class HashiSolver {
         }
     }
 
-    private void printSolution() {
+    public void generateAnotherSolution(List<List<Integer>> components) {
+
+        for (int i = 0; i < components.size(); i++) {
+            for (int j = i + 1; j < components.size(); j++) {
+                List<Integer> componentA = components.get(i);
+                List<Integer> componentB = components.get(j);
+                List<BoolExpr> possibleConnectionsBetweenComponents = new ArrayList<>();
+
+                for (int nodeA : componentA) {
+                    for (int nodeB : componentB) {
+                        String varName1 = "bridge_" + nodeA + "_" + nodeB;
+                        String varName2 = "bridge_" + nodeB + "_" + nodeA;
+                        if (bridgeValues.containsKey(varName1)) {
+                            possibleConnectionsBetweenComponents.add(context.mkGt(context.mkIntConst(varName1), context.mkInt(0)));
+                        } else if (bridgeValues.containsKey(varName2)) {
+                            possibleConnectionsBetweenComponents.add(context.mkGt(context.mkIntConst(varName2), context.mkInt(0)));
+                        }
+                    }
+                }
+                if (!possibleConnectionsBetweenComponents.isEmpty()) {
+                    BoolExpr componentLinkConstraint = context.mkOr(possibleConnectionsBetweenComponents.toArray(new BoolExpr[0]));
+                    solver.add(componentLinkConstraint);
+                    assumptions.add(componentLinkConstraint);
+                    costraints.add(componentLinkConstraint);
+                }
+            }
+        }
+    }
+
+    public void printSolution() {
         Model model = solver.getModel();
-        System.out.println("Feasible solution:");
+        Logger.logInfo("Feasible solution:");
         for (IntExpr variable : variables) {
             int val = Integer.parseInt(model.evaluate(variable, false).toString());
-            System.out.println(variable.toString() + " = " + val);
+            Logger.logInfo(variable.toString() + " = " + val);
         }
     }
 
     private void printConstraintsInConflict() {
         BoolExpr[] constraintsInConflict = solver.getUnsatCore();
-        System.out.println("Unsatisfiable, constraints impossible to satisfy:");
+        Logger.logInfo("Unsatisfiable, constraints impossible to satisfy:");
         for (BoolExpr constraint : constraintsInConflict) {
-            System.out.println(constraint);
+            Logger.logInfo(constraint.toString());
         }
     }
 
     public void printConstraints() {
-        System.out.println(variables.size() + " variables:");
+        Logger.logInfo("\n" + variables.size() + " variables:");
         for (IntExpr variable : variables) {
-            System.out.println(variable.toString());
+            Logger.logInfo(variable.toString());
         }
 
-        System.out.println("Constraints:\n");
+        Logger.logInfo("\nConstraints:\n");
         for (int i = 0; i < costraints.size(); i++) {
-            System.out.println(i + 1 + ") " + costraints.get(i) + "\n");
+            Logger.logInfo(i + 1 + ") " + costraints.get(i) + "\n");
         }
     }
 
