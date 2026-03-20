@@ -9,7 +9,7 @@ public class FileHandler {
 
     public static String[] readFile() {
         String[] textLines;
-        InputStream inputStream = FileHandler.class.getResourceAsStream("/puzzle.txt");
+        InputStream inputStream = FileHandler.class.getResourceAsStream("/puzzle1.txt");
 
         if (inputStream == null) {
             System.err.println("Error loading puzzle.txt file");

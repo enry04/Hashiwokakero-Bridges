@@ -1,11 +1,10 @@
 package game;
 
-import gui.HashiPuzzleGUI;
-import javafx.application.Application;
 import main.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class HashiPuzzle {
 
@@ -15,48 +14,66 @@ public class HashiPuzzle {
     private final List<Bridge> bridges;
     private final HashiSolver hashiSolver;
     private HashiGraph hashiGraph;
-    private HashiPuzzleGUI hashiPuzzleGUI;
+    private List<Bridge> solutionBridges;
+    private int currentId = 0;
 
-    public HashiPuzzle(String[] input) {
+//    public HashiPuzzle(String[] input) {
+//        bridges = new ArrayList<>();
+//        islands = new ArrayList<>();
+//        hashiSolver = new HashiSolver();
+//        solutionBridges = new ArrayList<>();
+//        initIslands(input);
+//        validateDegrees();
+//        addBridges();
+//        solve();
+//    }
+
+    public HashiPuzzle(int rows, int cols) {
+        this.rows = rows;
+        this.cols = cols;
         bridges = new ArrayList<>();
         islands = new ArrayList<>();
         hashiSolver = new HashiSolver();
-        hashiPuzzleGUI = new HashiPuzzleGUI();
-        initIslands(input);
+        solutionBridges = new ArrayList<>();
+        grid = new Island[rows][cols];
+    }
+
+    public void solve() {
+        hashiGraph = new HashiGraph(islands);
         validateDegrees();
         addBridges();
-        solve();
+        findSolution();
     }
 
-    private void initIslands(String[] input) {
-        int counter = 0;
-        for (String line : input) {
-            if (line.isEmpty() || line.startsWith("#") || line.startsWith("\r")) continue;
-            String[] cells = line.split("\\s+");
-            if (grid == null) {
-                rows = Integer.parseInt(cells[0]);
-                cols = Integer.parseInt(cells[1]);
-                grid = new Island[rows][cols];
-                continue;
-            }
-            int currentX = Integer.parseInt(cells[0]);
-            int currentY = Integer.parseInt(cells[1]);
-            int currentDegree = Integer.parseInt(cells[2]);
-            if (!isIslandCorrect(currentX, currentY, currentDegree)) {
-                Logger.logError("Invalid island at (" + currentX + "," + currentY + ") with degree " + currentDegree);
-            }
-            grid[currentX][currentY] = new Island(currentDegree, currentX, currentY, counter);
-            islands.add(grid[currentX][currentY]);
-            counter++;
-        }
-        hashiGraph = new HashiGraph(islands);
-    }
-
-    private boolean isIslandCorrect(int x, int y, int degree) {
-        if (x < 0 || y < 0 || x >= rows || y >= cols || degree <= 0 || degree > 8)
-            return false;
-        return grid[x][y] == null;
-    }
+//    private void initIslands(String[] input) {
+//        int counter = 0;
+//        for (String line : input) {
+//            if (line.isEmpty() || line.startsWith("#") || line.startsWith("\r")) continue;
+//            String[] cells = line.split("\\s+");
+//            if (grid == null) {
+//                rows = Integer.parseInt(cells[0]);
+//                cols = Integer.parseInt(cells[1]);
+//                grid = new Island[rows][cols];
+//                continue;
+//            }
+//            int currentX = Integer.parseInt(cells[0]);
+//            int currentY = Integer.parseInt(cells[1]);
+//            int currentDegree = Integer.parseInt(cells[2]);
+//            if (!isIslandCorrect(currentX, currentY, currentDegree)) {
+//                Logger.logError("Invalid island at (" + currentX + "," + currentY + ") with degree " + currentDegree);
+//            }
+//            grid[currentX][currentY] = new Island(currentDegree, currentX, currentY, counter);
+//            islands.add(grid[currentX][currentY]);
+//            counter++;
+//        }
+//        if (islands.isEmpty()) Logger.logError("No islands found");
+//        hashiGraph = new HashiGraph(islands);
+//    }
+//
+//    private boolean isIslandCorrect(int x, int y, int degree) {
+//        if (x < 0 || y < 0 || x >= rows || y >= cols || degree <= 0 || degree > 8) return false;
+//        return grid[x][y] == null;
+//    }
 
     private void validateDegrees() {
         for (Island island : islands) {
@@ -113,7 +130,8 @@ public class HashiPuzzle {
         }
     }
 
-    private void solve() {
+    private void findSolution() {
+        solutionBridges.clear();
         hashiSolver.setTimeout();
         initVariables();
         hashiSolver.addBridgesConstraint();
@@ -122,13 +140,15 @@ public class HashiPuzzle {
         hashiSolver.printConstraints();
 
         while (hashiSolver.hasSolution()) {
-            hashiGraph.buildGraph(hashiSolver.getBridgeValues());
+            Map<String, Integer> bridgeValues = hashiSolver.getBridgeValues();
+            hashiGraph.buildGraph(bridgeValues);
             hashiSolver.printSolution();
 
             if (!hashiGraph.isGraphConnected()) {
                 Logger.logWarning("Graph not connected, searching another solution with connectivity constraint...");
                 hashiSolver.generateAnotherSolution(hashiGraph.getComponents());
             } else {
+                buildSolutionBridges(bridgeValues);
                 return;
             }
         }
@@ -176,11 +196,40 @@ public class HashiPuzzle {
         return val > Math.min(a, b) && val < Math.max(a, b);
     }
 
+    private void buildSolutionBridges(Map<String, Integer> bridgeValues) {
+        for (Map.Entry<String, Integer> entry : bridgeValues.entrySet()) {
+            if (entry.getValue() > 0) {
+                String[] parts = entry.getKey().split("_");
+                int islandAId = Integer.parseInt(parts[1]);
+                int islandBId = Integer.parseInt(parts[2]);
+                solutionBridges.add(new Bridge(islands.get(islandAId), islands.get(islandBId), entry.getValue()));
+            }
+        }
+    }
+
     public int getCols() {
         return cols;
     }
 
     public int getRows() {
         return rows;
+    }
+
+    public List<Island> getIslands() {
+        return islands;
+    }
+
+    public List<Bridge> getSolutionBridges() {
+        return solutionBridges;
+    }
+
+    public void addOrUpdateIsland(int row, int col, int degree) {
+        islands.add(new Island(degree, row, col, currentId));
+        grid[row][col] = new Island(degree, row, col, currentId);
+        currentId++;
+    }
+
+    public void removeIsland(int row, int col) {
+        islands.removeIf(island -> island.getX() == row && island.getY() == col);
     }
 }
