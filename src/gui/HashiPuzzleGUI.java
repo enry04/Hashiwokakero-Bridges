@@ -73,13 +73,11 @@ public class HashiPuzzleGUI extends Application {
         double offsetX = (WINDOW_WIDTH - gridWidth) / 2;
         double offsetY = (WINDOW_HEIGHT - gridHeight) / 2;
 
-        // posiziona il bottone centrato orizzontalmente
         solveButton.setLayoutX((WINDOW_WIDTH - buttonWidth) / 2);
 
-        // posiziona il bottone subito sotto la griglia, senza uscire dalla finestra
-        double yPos = offsetY + gridHeight + 10; // 10 px di margine
+        double yPos = offsetY + gridHeight + 10;
         if (yPos + buttonHeight > WINDOW_HEIGHT - 10) {
-            yPos = WINDOW_HEIGHT - buttonHeight - 10; // non uscire dalla finestra
+            yPos = WINDOW_HEIGHT - buttonHeight - 10;
         }
         solveButton.setLayoutY(yPos);
 
@@ -216,7 +214,6 @@ public class HashiPuzzleGUI extends Application {
             double centerX2 = offsetX + col2 * cellSize + cellSize / 2;
             double centerY2 = offsetY + row2 * cellSize + cellSize / 2;
 
-            // direzione
             double dx = centerX2 - centerX1;
             double dy = centerY2 - centerY1;
             double length = Math.sqrt(dx * dx + dy * dy);
@@ -224,17 +221,14 @@ public class HashiPuzzleGUI extends Application {
             dx /= length;
             dy /= length;
 
-            // raggio cerchio
             double radius = cellSize / 3 + 1;
 
-            // punti sui bordi dei cerchi
             double x1 = centerX1 + dx * radius;
             double y1 = centerY1 + dy * radius;
 
             double x2 = centerX2 - dx * radius;
             double y2 = centerY2 - dy * radius;
 
-            // ponte singolo
             if (numBridges >= 1) {
                 Line line1 = new Line(x1, y1, x2, y2);
                 line1.setStroke(Color.RED);
@@ -242,11 +236,9 @@ public class HashiPuzzleGUI extends Application {
                 root.getChildren().add(line1);
             }
 
-            // ponte doppio
             if (numBridges == 2) {
                 double offset = 6;
 
-                // vettore perpendicolare
                 double px = -dy;
                 double py = dx;
 

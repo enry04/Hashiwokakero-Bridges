@@ -4,21 +4,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Island {
-    private final int degree;
+    private int degree;
     private final int x, y;
     private List<Island> neighbors;
-    private final int id;
+    private int id;
 
-    public Island(int degree, int x, int y, int id) {
+    public Island(int degree, int x, int y) {
         this.degree = degree;
         this.x = x;
         this.y = y;
         neighbors = new ArrayList<>();
-        this.id = id;
     }
 
     public int getDegree() {
         return degree;
+    }
+
+    public void setDegree(int degree) {
+        this.degree = degree;
     }
 
     public int getX() {
@@ -39,5 +42,9 @@ public class Island {
 
     public int getId() {
         return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 }

@@ -17,7 +17,15 @@
         <SOURCES />
       </library>
     </orderEntry>
-    <orderEntry type="library" name="com.microsoft.z3" level="project" />
-    <orderEntry type="library" name="lib" level="project" />
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="file://C:/javafx-sdk-26/lib" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+        <jarDirectory url="file://C:/javafx-sdk-26/lib" recursive="false" />
+      </library>
+    </orderEntry>
   </component>
 </module>

@@ -8,79 +8,45 @@ import java.util.Map;
 
 public class HashiPuzzle {
 
-    private Island[][] grid;
+    private final Island[][] grid;
     private final List<Island> islands;
-    private int rows, cols;
-    private final List<Bridge> bridges;
-    private final HashiSolver hashiSolver;
+    private final int rows;
+    private final int cols;
+    private List<Bridge> bridges;
+    private HashiSolver hashiSolver;
     private HashiGraph hashiGraph;
-    private List<Bridge> solutionBridges;
-    private int currentId = 0;
-
-//    public HashiPuzzle(String[] input) {
-//        bridges = new ArrayList<>();
-//        islands = new ArrayList<>();
-//        hashiSolver = new HashiSolver();
-//        solutionBridges = new ArrayList<>();
-//        initIslands(input);
-//        validateDegrees();
-//        addBridges();
-//        solve();
-//    }
+    private final List<Bridge> solutionBridges;
 
     public HashiPuzzle(int rows, int cols) {
         this.rows = rows;
         this.cols = cols;
-        bridges = new ArrayList<>();
         islands = new ArrayList<>();
-        hashiSolver = new HashiSolver();
         solutionBridges = new ArrayList<>();
         grid = new Island[rows][cols];
     }
 
     public void solve() {
+
+        hashiSolver = new HashiSolver();
+        bridges = new ArrayList<>();
+        solutionBridges.clear();
         hashiGraph = new HashiGraph(islands);
-        validateDegrees();
-        addBridges();
-        findSolution();
+        assignIds();
+        if (validateNeighbors()) {
+            addBridges();
+            findSolution();
+        }
     }
 
-//    private void initIslands(String[] input) {
-//        int counter = 0;
-//        for (String line : input) {
-//            if (line.isEmpty() || line.startsWith("#") || line.startsWith("\r")) continue;
-//            String[] cells = line.split("\\s+");
-//            if (grid == null) {
-//                rows = Integer.parseInt(cells[0]);
-//                cols = Integer.parseInt(cells[1]);
-//                grid = new Island[rows][cols];
-//                continue;
-//            }
-//            int currentX = Integer.parseInt(cells[0]);
-//            int currentY = Integer.parseInt(cells[1]);
-//            int currentDegree = Integer.parseInt(cells[2]);
-//            if (!isIslandCorrect(currentX, currentY, currentDegree)) {
-//                Logger.logError("Invalid island at (" + currentX + "," + currentY + ") with degree " + currentDegree);
-//            }
-//            grid[currentX][currentY] = new Island(currentDegree, currentX, currentY, counter);
-//            islands.add(grid[currentX][currentY]);
-//            counter++;
-//        }
-//        if (islands.isEmpty()) Logger.logError("No islands found");
-//        hashiGraph = new HashiGraph(islands);
-//    }
-//
-//    private boolean isIslandCorrect(int x, int y, int degree) {
-//        if (x < 0 || y < 0 || x >= rows || y >= cols || degree <= 0 || degree > 8) return false;
-//        return grid[x][y] == null;
-//    }
-
-    private void validateDegrees() {
+    private boolean validateNeighbors() {
         for (Island island : islands) {
             island.setNeighbors(addNeighbors(island));
-            if (island.getNeighbors().isEmpty())
-                Logger.logError("Island " + island.getId() + " has no neighbors, impossible to solve");
+            if (island.getNeighbors().isEmpty()) {
+                Logger.logError("Island in position x: " + island.getY() + " y: " + island.getX() + " has no neighbors, impossible to solve");
+                return false;
+            }
         }
+        return true;
     }
 
     private List<Island> addNeighbors(Island island) {
@@ -117,6 +83,17 @@ public class HashiPuzzle {
         return neighbors;
     }
 
+    private void assignIds() {
+        int currentId = 0;
+
+        for (Island island : islands) {
+            island.setId(currentId);
+            grid[island.getX()][island.getY()] = island;
+            currentId++;
+        }
+
+    }
+
     private void addBridges() {
 
         for (Island island : islands) {
@@ -131,7 +108,6 @@ public class HashiPuzzle {
     }
 
     private void findSolution() {
-        solutionBridges.clear();
         hashiSolver.setTimeout();
         initVariables();
         hashiSolver.addBridgesConstraint();
@@ -142,7 +118,7 @@ public class HashiPuzzle {
         while (hashiSolver.hasSolution()) {
             Map<String, Integer> bridgeValues = hashiSolver.getBridgeValues();
             hashiGraph.buildGraph(bridgeValues);
-            hashiSolver.printSolution();
+            hashiSolver.printSolution(); //fare LOgger.sendmsg(hashiSolver.getSOlution())
 
             if (!hashiGraph.isGraphConnected()) {
                 Logger.logWarning("Graph not connected, searching another solution with connectivity constraint...");
@@ -152,6 +128,7 @@ public class HashiPuzzle {
                 return;
             }
         }
+        //hashiSolver.printConstraintsInConflict(); //fare Logger.sendmsg(hashisolver.getProblem?)
     }
 
     private void initVariables() {
@@ -224,12 +201,24 @@ public class HashiPuzzle {
     }
 
     public void addOrUpdateIsland(int row, int col, int degree) {
-        islands.add(new Island(degree, row, col, currentId));
-        grid[row][col] = new Island(degree, row, col, currentId);
-        currentId++;
+        if (grid[row][col] == null) {
+            islands.add(new Island(degree, row, col));
+            grid[row][col] = new Island(degree, row, col);
+        } else {
+            grid[row][col].setDegree(degree);
+            for (Island island : islands) {
+                if (island.getX() == row && island.getY() == col) {
+                    island.setDegree(degree);
+                    break;
+                }
+            }
+        }
+
+
     }
 
     public void removeIsland(int row, int col) {
         islands.removeIf(island -> island.getX() == row && island.getY() == col);
+        grid[row][col] = null;
     }
 }

@@ -6,7 +6,7 @@ import java.util.Map;
 
 public class HashiGraph {
 
-    private int nIslands;
+    private final int nIslands;
     private List<List<Integer>> adjacencyList;
 
     public HashiGraph(List<Island> islands) {

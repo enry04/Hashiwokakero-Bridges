@@ -40,7 +40,7 @@ public class HashiSolver {
         for (IntExpr variable : variables) {
             BoolExpr costraint = context.mkAnd(context.mkGe(variable, context.mkInt(0)), context.mkLe(variable, context.mkInt(2)));
             costraints.add(costraint);
-            BoolExpr label = context.mkBoolConst(" " + variable.toString() + " domain constraint ");
+            BoolExpr label = context.mkBoolConst(" " + variable.toString() + " domain constraint");
             assumptions.add(label);
             solver.add(context.mkImplies(label, costraint));
         }
@@ -133,6 +133,18 @@ public class HashiSolver {
         }
     }
 
+    public void printConstraints() {
+        Logger.logInfo("\n" + variables.size() + " variables:");
+        for (IntExpr variable : variables) {
+            Logger.logInfo(variable.toString());
+        }
+
+        Logger.logInfo("\nConstraints:\n");
+        for (int i = 0; i < costraints.size(); i++) {
+            Logger.logInfo(i + 1 + ") " + costraints.get(i).simplify() + "\n");
+        }
+    }
+
     public void printSolution() {
         Model model = solver.getModel();
         Logger.logInfo("Feasible solution:");
@@ -142,7 +154,7 @@ public class HashiSolver {
         }
     }
 
-    private void printConstraintsInConflict() {
+    public void printConstraintsInConflict() {
         BoolExpr[] constraintsInConflict = solver.getUnsatCore();
         Logger.logInfo("Unsatisfiable, constraints impossible to satisfy:");
         for (BoolExpr constraint : constraintsInConflict) {
@@ -150,19 +162,8 @@ public class HashiSolver {
         }
     }
 
-    public void printConstraints() {
-        Logger.logInfo("\n" + variables.size() + " variables:");
-        for (IntExpr variable : variables) {
-            Logger.logInfo(variable.toString());
-        }
-
-        Logger.logInfo("\nConstraints:\n");
-        for (int i = 0; i < costraints.size(); i++) {
-            Logger.logInfo(i + 1 + ") " + costraints.get(i) + "\n");
-        }
-    }
-
     public Map<String, Integer> getBridgeValues() {
         return bridgeValues;
     }
 }
+

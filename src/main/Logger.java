@@ -10,7 +10,7 @@ public class Logger {
     }
 
     public static void logError(String msg) {
-        throw new RuntimeException("\nERROR:\n" + msg);
+        System.out.println("\nERROR:\n" + msg + "\n");
     }
 
 }
