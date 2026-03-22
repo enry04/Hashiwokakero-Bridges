@@ -1,10 +1,12 @@
 package game;
 
+import com.microsoft.z3.Log;
 import main.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class HashiPuzzle {
 
@@ -25,17 +27,18 @@ public class HashiPuzzle {
         grid = new Island[rows][cols];
     }
 
-    public void solve() {
-
+    public boolean isSAT() {
         hashiSolver = new HashiSolver();
         bridges = new ArrayList<>();
         solutionBridges.clear();
         hashiGraph = new HashiGraph(islands);
         assignIds();
-        if (validateNeighbors()) {
-            addBridges();
-            findSolution();
+        if (!validateNeighbors()) {
+            return false;
         }
+
+        addBridges();
+        return findSolution();
     }
 
     private boolean validateNeighbors() {
@@ -107,28 +110,31 @@ public class HashiPuzzle {
         }
     }
 
-    private void findSolution() {
+    private boolean findSolution() {
         hashiSolver.setTimeout();
         initVariables();
+        Logger.logInfo(hashiSolver.getVariables());
         hashiSolver.addBridgesConstraint();
         addDegreeConstraint();
         addCrossConstraint();
-        hashiSolver.printConstraints();
+        Logger.logInfo(hashiSolver.getConstraints());
 
-        while (hashiSolver.hasSolution()) {
+        while (Objects.equals(hashiSolver.getProblemStatus(), "SAT")) {
             Map<String, Integer> bridgeValues = hashiSolver.getBridgeValues();
             hashiGraph.buildGraph(bridgeValues);
-            hashiSolver.printSolution(); //fare LOgger.sendmsg(hashiSolver.getSOlution())
+
+            Logger.logInfo(hashiSolver.getSolution());
 
             if (!hashiGraph.isGraphConnected()) {
                 Logger.logWarning("Graph not connected, searching another solution with connectivity constraint...");
                 hashiSolver.generateAnotherSolution(hashiGraph.getComponents());
             } else {
                 buildSolutionBridges(bridgeValues);
-                return;
+                return true;
             }
         }
-        //hashiSolver.printConstraintsInConflict(); //fare Logger.sendmsg(hashisolver.getProblem?)
+        Logger.logInfo(hashiSolver.getProblemStatus());
+        return false;
     }
 
     private void initVariables() {
@@ -184,14 +190,6 @@ public class HashiPuzzle {
         }
     }
 
-    public int getCols() {
-        return cols;
-    }
-
-    public int getRows() {
-        return rows;
-    }
-
     public List<Island> getIslands() {
         return islands;
     }
@@ -213,8 +211,6 @@ public class HashiPuzzle {
                 }
             }
         }
-
-
     }
 
     public void removeIsland(int row, int col) {

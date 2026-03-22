@@ -13,6 +13,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
 import javafx.scene.paint.Color;
+import main.Logger;
 
 import java.util.Optional;
 
@@ -23,6 +24,7 @@ public class HashiPuzzleGUI extends Application {
     private final int WINDOW_HEIGHT = 800;
     private int rows, cols;
     private double cellSize;
+    private double offsetX, offsetY;
     private HashiPuzzle hashiPuzzle;
 
     @Override
@@ -30,16 +32,17 @@ public class HashiPuzzleGUI extends Application {
 
         rows = askGridSize("Numero di righe:");
         cols = askGridSize("Numero di colonne:");
+
+        if (rows <= 0 || cols <= 0) {
+            Logger.logError("Rows and cols must be positive.");
+            return;
+        }
+
+        hashiPuzzle = new HashiPuzzle(rows, cols);
         root = new Pane();
         drawGrid();
         addSolveButton();
         root.setOnMouseClicked(e -> handleGridClick(e.getX(), e.getY()));
-        try {
-            hashiPuzzle = new HashiPuzzle(rows, cols);
-        } catch (RuntimeException e) {
-            showError(e.getMessage());
-        }
-
         Scene scene = new Scene(root, WINDOW_WIDTH, WINDOW_HEIGHT);
         stage.setTitle("Hashiwokakero");
         stage.setScene(scene);
@@ -68,10 +71,7 @@ public class HashiPuzzleGUI extends Application {
         double buttonHeight = 40;
         solveButton.setPrefSize(buttonWidth, buttonHeight);
 
-        double gridWidth = cols * cellSize;
         double gridHeight = rows * cellSize;
-        double offsetX = (WINDOW_WIDTH - gridWidth) / 2;
-        double offsetY = (WINDOW_HEIGHT - gridHeight) / 2;
 
         solveButton.setLayoutX((WINDOW_WIDTH - buttonWidth) / 2);
 
@@ -82,9 +82,12 @@ public class HashiPuzzleGUI extends Application {
         solveButton.setLayoutY(yPos);
 
         solveButton.setOnAction(e -> {
-            hashiPuzzle.solve();
-            redraw();
-            drawBridges();
+            if (hashiPuzzle.isSAT()) {
+                redraw();
+                drawBridges();
+            } else {
+                showError("UNSAT");
+            }
         });
 
         root.getChildren().add(solveButton);
@@ -94,8 +97,6 @@ public class HashiPuzzleGUI extends Application {
 
         double gridWidth = cols * cellSize;
         double gridHeight = rows * cellSize;
-        double offsetX = (WINDOW_WIDTH - gridWidth) / 2;
-        double offsetY = (WINDOW_HEIGHT - gridHeight) / 2;
 
         if (mouseX < offsetX || mouseY < offsetY ||
                 mouseX > offsetX + gridWidth || mouseY > offsetY + gridHeight) {
@@ -117,7 +118,6 @@ public class HashiPuzzleGUI extends Application {
                 int degree = Integer.parseInt(val);
                 hashiPuzzle.addOrUpdateIsland(row, col, degree);
             }
-
             redraw();
         });
     }
@@ -129,21 +129,19 @@ public class HashiPuzzleGUI extends Application {
         drawIslands();
     }
 
-    private void showError(String message) {
-        Text errorText = new Text(50, 50, message);
-        errorText.setFill(Color.RED);
-        root.getChildren().add(errorText);
-    }
-
     public void drawGrid() {
         double padding = 40;
+        double bottomSpace = 80;
 
-        cellSize = Math.min((WINDOW_WIDTH - 2 * padding) / (double) cols, (WINDOW_HEIGHT - 2 * padding) / (double) rows);
+        cellSize = Math.min(
+                (WINDOW_WIDTH - 2 * padding) / (double) cols,
+                (WINDOW_HEIGHT - 2 * padding - bottomSpace) / (double) rows
+        );
 
         double gridWidth = cols * cellSize;
         double gridHeight = rows * cellSize;
-        double offsetX = (WINDOW_WIDTH - gridWidth) / 2;
-        double offsetY = (WINDOW_HEIGHT - gridHeight) / 2;
+        offsetX = (WINDOW_WIDTH - gridWidth) / 2;
+        offsetY = (WINDOW_HEIGHT - bottomSpace - gridHeight) / 2;
 
         for (int j = 0; j <= cols; j++) {
             double x = offsetX + j * cellSize;
@@ -163,11 +161,6 @@ public class HashiPuzzleGUI extends Application {
     }
 
     private void drawIslands() {
-
-        double gridWidth = cols * cellSize;
-        double gridHeight = rows * cellSize;
-        double offsetX = (WINDOW_WIDTH - gridWidth) / 2;
-        double offsetY = (WINDOW_HEIGHT - gridHeight) / 2;
 
         for (int i = 0; i < hashiPuzzle.getIslands().size(); i++) {
             int row = hashiPuzzle.getIslands().get(i).getX();
@@ -197,8 +190,6 @@ public class HashiPuzzleGUI extends Application {
     }
 
     private void drawBridges() {
-        double offsetX = (WINDOW_WIDTH - hashiPuzzle.getCols() * cellSize) / 2;
-        double offsetY = (WINDOW_HEIGHT - hashiPuzzle.getRows() * cellSize) / 2;
 
         for (Bridge bridge : hashiPuzzle.getSolutionBridges()) {
 
@@ -258,4 +249,20 @@ public class HashiPuzzleGUI extends Application {
         }
     }
 
+    public void showError(String message) {
+
+        root.getChildren().removeIf(node -> node instanceof Text);
+
+        Text errorText = new Text(message);
+        errorText.setFill(Color.RED);
+        errorText.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+
+        errorText.applyCss();
+        double textWidth = errorText.getLayoutBounds().getWidth();
+
+        errorText.setX((WINDOW_WIDTH - textWidth) / 2);
+        errorText.setY(30);
+
+        root.getChildren().add(errorText);
+    }
 }

@@ -6,7 +6,7 @@ public class Logger {
     }
 
     public static void logWarning(String msg) {
-        System.out.println("\nWARNING:\n" + msg + "\n");
+        System.out.println("\nWARNING:\n" + msg);
     }
 
     public static void logError(String msg) {

@@ -80,20 +80,18 @@ public class HashiSolver {
         solver.add(context.mkImplies(label, constraint));
     }
 
-    public boolean hasSolution() {
+    public String getProblemStatus() {
 
         Status status = solver.check(assumptions.toArray(new BoolExpr[0]));
 
         if (status == Status.SATISFIABLE) {
             createSolutionMap();
-            return true;
+            return "SAT";
         } else if (status == Status.UNSATISFIABLE) {
-            printConstraintsInConflict();
+            return "Unsatisfiable, constraints impossible to satisfy:" + getConstraintsInConflict();
         } else {
-            Logger.logInfo("Unknown solution, timeout reached...");
+            return "Unknown solution, timeout reached...";
         }
-
-        return false;
     }
 
     private void createSolutionMap() {
@@ -133,33 +131,43 @@ public class HashiSolver {
         }
     }
 
-    public void printConstraints() {
-        Logger.logInfo("\n" + variables.size() + " variables:");
-        for (IntExpr variable : variables) {
-            Logger.logInfo(variable.toString());
-        }
+    public String getVariables() {
+        StringBuilder variablesString = new StringBuilder();
 
-        Logger.logInfo("\nConstraints:\n");
-        for (int i = 0; i < costraints.size(); i++) {
-            Logger.logInfo(i + 1 + ") " + costraints.get(i).simplify() + "\n");
+        variablesString.append("\n").append(variables.size()).append(" variables:");
+        for (IntExpr variable : variables) {
+            variablesString.append(variable.toString());
         }
+        return variablesString.toString();
     }
 
-    public void printSolution() {
+    public String getConstraints() {
+        StringBuilder constraintsString = new StringBuilder();
+        constraintsString.append("\nConstraints:\n");
+        for (int i = 0; i < costraints.size(); i++) {
+            constraintsString.append(i + 1).append(") ").append(costraints.get(i).simplify()).append("\n");
+        }
+        return constraintsString.toString();
+    }
+
+    public String getSolution() {
+        StringBuilder solutionString = new StringBuilder();
         Model model = solver.getModel();
-        Logger.logInfo("Feasible solution:");
+        solutionString.append("Feasible solution:");
         for (IntExpr variable : variables) {
             int val = Integer.parseInt(model.evaluate(variable, false).toString());
-            Logger.logInfo(variable.toString() + " = " + val);
+            solutionString.append(variable.toString()).append(" = ").append(val).append("\n");
         }
+        return solutionString.toString();
     }
 
-    public void printConstraintsInConflict() {
+    private String getConstraintsInConflict() {
         BoolExpr[] constraintsInConflict = solver.getUnsatCore();
-        Logger.logInfo("Unsatisfiable, constraints impossible to satisfy:");
+        StringBuilder constraintsString = new StringBuilder();
         for (BoolExpr constraint : constraintsInConflict) {
-            Logger.logInfo(constraint.toString());
+            constraintsString.append(constraint.toString()).append("\n");
         }
+        return constraintsString.toString();
     }
 
     public Map<String, Integer> getBridgeValues() {
