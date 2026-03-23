@@ -34,7 +34,7 @@ public class HashiPuzzleGUI extends Application {
         cols = askGridSize("Numero di colonne:");
 
         if (rows <= 0 || cols <= 0) {
-            Logger.logError("Rows and cols must be positive.");
+            Logger.logError("Rows and cols must be positive integers.");
             return;
         }
 
@@ -66,7 +66,7 @@ public class HashiPuzzleGUI extends Application {
     }
 
     private void addSolveButton() {
-        Button solveButton = new Button("Solve");
+        Button solveButton = new Button("Risolvi");
         double buttonWidth = 100;
         double buttonHeight = 40;
         solveButton.setPrefSize(buttonWidth, buttonHeight);
@@ -114,6 +114,12 @@ public class HashiPuzzleGUI extends Application {
         result.ifPresent(val -> {
             if (val.isEmpty()) {
                 hashiPuzzle.removeIsland(row, col);
+            } else if (!val.matches("\\d+")) {
+                showError("Island degree value not valid");
+                return;
+            } else if (Integer.parseInt(val) > 8 || Integer.parseInt(val) <= 0) {
+                showError("Island degree value not valid");
+                return;
             } else {
                 int degree = Integer.parseInt(val);
                 hashiPuzzle.addOrUpdateIsland(row, col, degree);

@@ -1,6 +1,5 @@
 package game;
 
-import com.microsoft.z3.Log;
 import main.Logger;
 
 import java.util.ArrayList;
@@ -28,20 +27,61 @@ public class HashiPuzzle {
     }
 
     public boolean isSAT() {
+        initSolver();
+        if (!isPuzzleValid()) {
+            return false;
+        }
+        buildModel();
+
+        return isModelSatisfiable();
+    }
+
+    private void initSolver() {
         hashiSolver = new HashiSolver();
         bridges = new ArrayList<>();
         solutionBridges.clear();
-        hashiGraph = new HashiGraph(islands);
-        assignIds();
-        if (!validateNeighbors()) {
-            return false;
-        }
-
-        addBridges();
-        return findSolution();
     }
 
-    private boolean validateNeighbors() {
+    private boolean isPuzzleValid() {
+        hashiGraph = new HashiGraph(islands);
+        assignIds();
+        return isNeighborsValid();
+    }
+
+    private void buildModel() {
+        addBridges();
+        hashiSolver.setTimeout();
+
+        initVariables();
+        Logger.logInfo(hashiSolver.getVariablesToString());
+        hashiSolver.addBridgesConstraint();
+        addDegreeConstraint();
+        addCrossConstraint();
+        Logger.logInfo(hashiSolver.getConstraintsToString());
+    }
+
+    private boolean isModelSatisfiable() {
+        while (Objects.equals(hashiSolver.getProblemStatus(), "SAT")) {
+
+            Map<String, Integer> bridgeValues = hashiSolver.getBridgeValues();
+            hashiGraph.buildGraph(bridgeValues);
+            Logger.logInfo(hashiSolver.getSolutionToString());
+
+            if (!hashiGraph.isGraphConnected()) {
+                Logger.logWarning("Graph not connected, searching another solution with connectivity constraint...\n");
+                hashiSolver.generateAnotherSolution(hashiGraph.getComponents());
+                Logger.logInfo(hashiSolver.getConstraintsToString());
+            } else {
+                buildSolutionBridges(bridgeValues);
+                return true;
+            }
+        }
+
+        Logger.logInfo(hashiSolver.getProblemStatus());
+        return false;
+    }
+
+    private boolean isNeighborsValid() {
         for (Island island : islands) {
             island.setNeighbors(addNeighbors(island));
             if (island.getNeighbors().isEmpty()) {
@@ -110,33 +150,6 @@ public class HashiPuzzle {
         }
     }
 
-    private boolean findSolution() {
-        hashiSolver.setTimeout();
-        initVariables();
-        Logger.logInfo(hashiSolver.getVariables());
-        hashiSolver.addBridgesConstraint();
-        addDegreeConstraint();
-        addCrossConstraint();
-        Logger.logInfo(hashiSolver.getConstraints());
-
-        while (Objects.equals(hashiSolver.getProblemStatus(), "SAT")) {
-            Map<String, Integer> bridgeValues = hashiSolver.getBridgeValues();
-            hashiGraph.buildGraph(bridgeValues);
-
-            Logger.logInfo(hashiSolver.getSolution());
-
-            if (!hashiGraph.isGraphConnected()) {
-                Logger.logWarning("Graph not connected, searching another solution with connectivity constraint...");
-                hashiSolver.generateAnotherSolution(hashiGraph.getComponents());
-            } else {
-                buildSolutionBridges(bridgeValues);
-                return true;
-            }
-        }
-        Logger.logInfo(hashiSolver.getProblemStatus());
-        return false;
-    }
-
     private void initVariables() {
         for (Bridge bridge : bridges) {
             hashiSolver.addVariable("bridge_" + bridge.getIslandA().getId() + "_" + bridge.getIslandB().getId());
@@ -200,8 +213,9 @@ public class HashiPuzzle {
 
     public void addOrUpdateIsland(int row, int col, int degree) {
         if (grid[row][col] == null) {
-            islands.add(new Island(degree, row, col));
-            grid[row][col] = new Island(degree, row, col);
+            Island island = new Island(degree, row, col);
+            islands.add(island);
+            grid[row][col] = island;
         } else {
             grid[row][col].setDegree(degree);
             for (Island island : islands) {

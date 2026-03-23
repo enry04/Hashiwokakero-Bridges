@@ -1,7 +1,6 @@
 package game;
 
 import com.microsoft.z3.*;
-import main.Logger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,6 +14,7 @@ public class HashiSolver {
     private final List<IntExpr> variables;
     private final List<BoolExpr> costraints;
     private final List<BoolExpr> assumptions;
+    private final Map<BoolExpr, BoolExpr> labelsToConstraints;
     private final Map<String, Integer> bridgeValues;
 
     public HashiSolver() {
@@ -23,6 +23,7 @@ public class HashiSolver {
         variables = new ArrayList<>();
         costraints = new ArrayList<>();
         assumptions = new ArrayList<>();
+        labelsToConstraints = new HashMap<>();
         bridgeValues = new HashMap<>();
     }
 
@@ -38,11 +39,12 @@ public class HashiSolver {
 
     public void addBridgesConstraint() {
         for (IntExpr variable : variables) {
-            BoolExpr costraint = context.mkAnd(context.mkGe(variable, context.mkInt(0)), context.mkLe(variable, context.mkInt(2)));
-            costraints.add(costraint);
+            BoolExpr constraint = context.mkAnd(context.mkGe(variable, context.mkInt(0)), context.mkLe(variable, context.mkInt(2)));
+            costraints.add(constraint);
             BoolExpr label = context.mkBoolConst(" " + variable.toString() + " domain constraint");
             assumptions.add(label);
-            solver.add(context.mkImplies(label, costraint));
+            labelsToConstraints.put(label, constraint);
+            solver.add(context.mkImplies(label, constraint));
         }
     }
 
@@ -67,6 +69,7 @@ public class HashiSolver {
 
         BoolExpr label = context.mkBoolConst(labelName + " degree constraint with island " + id + " (degree = " + degree + ") ");
         assumptions.add(label);
+        labelsToConstraints.put(label, constraint);
         solver.add(context.mkImplies(label, constraint));
     }
 
@@ -77,6 +80,7 @@ public class HashiSolver {
         costraints.add(constraint);
         BoolExpr label = context.mkBoolConst(" " + var1 + " " + var2 + " cross constraint ");
         assumptions.add(label);
+        labelsToConstraints.put(label, constraint);
         solver.add(context.mkImplies(label, constraint));
     }
 
@@ -88,7 +92,7 @@ public class HashiSolver {
             createSolutionMap();
             return "SAT";
         } else if (status == Status.UNSATISFIABLE) {
-            return "Unsatisfiable, constraints impossible to satisfy:" + getConstraintsInConflict();
+            return "Unsatisfiable, constraints impossible to satisfy: \n" + getConstraintsInConflictToString();
         } else {
             return "Unknown solution, timeout reached...";
         }
@@ -124,36 +128,38 @@ public class HashiSolver {
                 if (!possibleConnectionsBetweenComponents.isEmpty()) {
                     BoolExpr componentLinkConstraint = context.mkOr(possibleConnectionsBetweenComponents.toArray(new BoolExpr[0]));
                     solver.add(componentLinkConstraint);
-                    assumptions.add(componentLinkConstraint);
+                    BoolExpr label = context.mkBoolConst("component_link_" + i + "_" + j);
+                    assumptions.add(label);
                     costraints.add(componentLinkConstraint);
+                    labelsToConstraints.put(label, componentLinkConstraint);
                 }
             }
         }
     }
 
-    public String getVariables() {
+    public String getVariablesToString() {
         StringBuilder variablesString = new StringBuilder();
 
-        variablesString.append("\n").append(variables.size()).append(" variables:");
+        variablesString.append(variables.size()).append(" variables:\n");
         for (IntExpr variable : variables) {
-            variablesString.append(variable.toString());
+            variablesString.append(variable.toString()).append("\n");
         }
         return variablesString.toString();
     }
 
-    public String getConstraints() {
+    public String getConstraintsToString() {
         StringBuilder constraintsString = new StringBuilder();
-        constraintsString.append("\nConstraints:\n");
+        constraintsString.append("Constraints:\n");
         for (int i = 0; i < costraints.size(); i++) {
             constraintsString.append(i + 1).append(") ").append(costraints.get(i).simplify()).append("\n");
         }
         return constraintsString.toString();
     }
 
-    public String getSolution() {
+    public String getSolutionToString() {
         StringBuilder solutionString = new StringBuilder();
         Model model = solver.getModel();
-        solutionString.append("Feasible solution:");
+        solutionString.append("Feasible solution:\n");
         for (IntExpr variable : variables) {
             int val = Integer.parseInt(model.evaluate(variable, false).toString());
             solutionString.append(variable.toString()).append(" = ").append(val).append("\n");
@@ -161,10 +167,11 @@ public class HashiSolver {
         return solutionString.toString();
     }
 
-    private String getConstraintsInConflict() {
+    private String getConstraintsInConflictToString() {
         BoolExpr[] constraintsInConflict = solver.getUnsatCore();
         StringBuilder constraintsString = new StringBuilder();
-        for (BoolExpr constraint : constraintsInConflict) {
+        for (BoolExpr label : constraintsInConflict) {
+            BoolExpr constraint = labelsToConstraints.get(label);
             constraintsString.append(constraint.toString()).append("\n");
         }
         return constraintsString.toString();
