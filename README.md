@@ -1,54 +1,27 @@
-# Hashiwokakero-Bridges
-🧩 Hashiwokakero Solver (Java + Z3 SMT) 
+🧩 Hashiwokakero Solver (Java + Z3 SMT)
+This project implements a solution to the Hashiwokakero logic puzzle using Java and an SMT solver (Z3).
 
-Questo progetto implementa una soluzione al puzzle logico Hashiwokakero utilizzando Java e un solver SMT (Z3).
+🔹 Problem Description
+Hashiwokakero is a grid-based puzzle in which certain cells contain islands with a number indicating their required degree (number of bridges).
+The goal is to connect all islands with bridges while satisfying the following constraints:
+- Each island must have a number of bridges equal to its specified degree.
+- Bridges can only be horizontal or vertical.
+- Bridges cannot cross each other.
+- All islands must be connected into a single connected component.
 
-⸻
+🔹 Implementation Approach
+The problem is modeled as a Satisfiability Modulo Theories (SMT) problem and solved using the Z3 solver.
 
-🔹 Descrizione del problema
+🧠 Modeling
+- Each possible bridge between two islands is represented by a variable whose value is 0, 1, or 2, indicating the number of bridges.
+- Islands are identified by their coordinates (row, col) and a unique ID.
+- The puzzle constraints are translated into logical and arithmetic constraints.
 
-Hashiwokakero è un puzzle su griglia in cui alcune celle contengono isole con un numero (grado).
+📌 Main Constraints
+- Degree constraint: The sum of the bridges incident to each island must equal its specified degree.
+- Non-crossing constraint: Bridges cannot cross each other.
+- Global connectivity constraint: All islands must belong to a single connected component.
 
-L’obiettivo è collegare tutte le isole con ponti rispettando i seguenti vincoli:
-
-	•	ogni isola deve avere un numero di ponti pari al proprio grado
-  
-	•	i ponti possono essere solo orizzontali o verticali
-  
-	•	i ponti non possono incrociarsi
-  
-	•	tutte le isole devono essere connesse in un unico componente
-
-⸻
-
-🔹 Approccio implementativo
-
-Il problema è stato modellato come un problema di Satisfiability Modulo Theories (SMT) e risolto tramite il solver Z3.
-
-⸻
-
-🧠 Modellazione
-
-	•	Ogni possibile ponte tra due isole è rappresentato come una variabile (0, 1 o 2 ponti)
-  
-	•	Le isole sono identificate da coordinate (row, col) e un ID univoco
-  
-	•	I vincoli del puzzle vengono tradotti in vincoli logico-aritmetici
-
-⸻
-
-📌 Vincoli principali
-
-	•	Vincolo di grado: la somma dei ponti incidenti a ogni isola deve rispettare il valore assegnato
-  
-	•	Vincolo di non incrocio tra ponti
-  
-	•	Vincolo di connettività globale delle isole
-
-⸻
-
-🔹 Complessità
-
-	•	Riduzione a SMT: tempo polinomiale rispetto al numero di isole e ponti possibili
-  
-	•	Risoluzione: esponenziale nel caso peggiore (problema NP-completo)
+🔹 Complexity
+- SMT encoding: Polynomial time with respect to the number of islands and possible bridges.
+- Solving: Exponential in the worst case, since the problem is NP-complete.
